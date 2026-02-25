@@ -1,0 +1,16 @@
+[
+    {
+        "id": "TKT-8991X",
+        "homestayId": "h1",
+        "touristName": "Alice Vance",
+        "dates": "2026-10-12 to 2026-10-15",
+        "status": "Confirmed"
+    },
+    {
+        "id": "TKT-3221Y",
+        "homestayId": "h3",
+        "touristName": "Bob Matrix",
+        "dates": "2026-11-01 to 2026-11-05",
+        "status": "Pending"
+    }
+]

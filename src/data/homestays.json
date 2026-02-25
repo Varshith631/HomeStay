@@ -1,0 +1,26 @@
+[
+    {
+        "id": "h1",
+        "name": "Neon Heights Loft",
+        "location": "Cyber City Sector 7",
+        "price": 150,
+        "rating": 4.9,
+        "image": "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=800&q=80"
+    },
+    {
+        "id": "h2",
+        "name": "Zenith Horizon Retreat",
+        "location": "Serenity Peaks",
+        "price": 95,
+        "rating": 4.8,
+        "image": "https://images.unsplash.com/photo-1512917774080-9991f1c4c750?w=800&q=80"
+    },
+    {
+        "id": "h3",
+        "name": "Quantum Pod Module",
+        "location": "Tech District Core",
+        "price": 75,
+        "rating": 4.5,
+        "image": "https://images.unsplash.com/photo-1498409724128-66236b2803b3?w=800&q=80"
+    }
+]

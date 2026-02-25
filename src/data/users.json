@@ -1,0 +1,30 @@
+[
+    {
+        "id": "USR-001",
+        "role": "Tourist",
+        "name": "Alice Vance",
+        "email": "tourist@nexus.com",
+        "password": "password123"
+    },
+    {
+        "id": "USR-002",
+        "role": "Host",
+        "name": "Eliot Ness",
+        "email": "host@nexus.com",
+        "password": "password123"
+    },
+    {
+        "id": "USR-003",
+        "role": "Guide",
+        "name": "Sarah Connor",
+        "email": "guide@nexus.com",
+        "password": "password123"
+    },
+    {
+        "id": "USR-999",
+        "role": "Admin",
+        "name": "System Prime",
+        "email": "admin@nexus.com",
+        "password": "password123"
+    }
+]

@@ -1,0 +1,16 @@
+[
+    {
+        "id": "MSG-X1",
+        "from": "Alice Vance",
+        "to": "Eliot Ness",
+        "subject": "Late Check-in Protocol",
+        "date": "2026-09-24T18:00Z"
+    },
+    {
+        "id": "MSG-X2",
+        "from": "System Prime",
+        "to": "All Nodes",
+        "subject": "Platform UI Upgrades Executed",
+        "date": "2026-09-24T12:00Z"
+    }
+]
