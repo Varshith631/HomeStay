@@ -1,33 +1,61 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import PageTransition from '../components/PageTransition';
 import { Map, Zap, CheckCircle2, TrendingUp, Plus, X } from 'lucide-react';
-import { useData } from '../context/DataContext';
+import { useAuth } from '../context/AuthContext';
 
 export default function GuideDashboard() {
-    const { attractions, addAttraction } = useData();
+    const [attractions, setAttractions] = useState([]);
+    const { authFetch } = useAuth();
     const [isAdding, setIsAdding] = useState(false);
 
     // Form State
     const [name, setName] = useState('');
     const [category, setCategory] = useState('');
 
-    const handleAddSubmit = (e) => {
+    const fetchMyAttractions = async () => {
+        try {
+            const res = await authFetch('/api/recommendations/me');
+            if (res.ok) {
+                setAttractions(await res.json());
+            }
+        } catch(error) {
+            console.error(error);
+        }
+    };
+
+    useEffect(() => {
+        fetchMyAttractions();
+    }, [authFetch]);
+
+    const handleAddSubmit = async (e) => {
         e.preventDefault();
         if (!name || !category) return;
 
-        const newAttr = {
-            id: `a${Date.now()}`,
-            name,
-            category,
-            popularity: Math.floor(Math.random() * 40) + 50, // Initial random popularity
-            status: 'Pending' // Requires admin approval
+        const payload = {
+            title: name,
+            content: "Insight provided dynamically by Guide.",
+            location: category
         };
 
-        addAttraction(newAttr);
-        setIsAdding(false);
-        setName('');
-        setCategory('');
+        try {
+            const res = await authFetch('/api/recommendations', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+
+            if (res.ok) {
+                fetchMyAttractions();
+                setIsAdding(false);
+                setName('');
+                setCategory('');
+            } else {
+                alert("Server rejected insight");
+            }
+        } catch(e) {
+            console.error(e);
+        }
     };
 
     return (
@@ -96,16 +124,17 @@ export default function GuideDashboard() {
                                     animate={{ opacity: 1, x: 0 }}
                                     transition={{ delay: i * 0.05 }}
                                     className="glass-panel"
-                                    style={{ padding: '30px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderLeft: attr.status === 'Pending' ? '4px solid #ff9900' : '4px solid #00f0ff' }}
+                                    style={{ padding: '30px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderLeft: attr.status === 'PENDING' ? '4px solid #ff9900' : attr.status === 'REJECTED' ? '4px solid #ff3366' : '4px solid #00f0ff' }}
                                 >
                                     <div>
                                         <div style={{ display: 'flex', alignItems: 'center', gap: '15px', marginBottom: '10px' }}>
-                                            <h3 style={{ fontSize: '1.6rem' }}>{attr.name}</h3>
-                                            {attr.status === 'Pending' && <span style={{ padding: '4px 10px', background: 'rgba(255,153,0,0.2)', color: '#ff9900', borderRadius: '12px', fontSize: '0.8rem', fontWeight: 'bold' }}>Pending Approval</span>}
+                                            <h3 style={{ fontSize: '1.6rem' }}>{attr.title}</h3>
+                                            {attr.status === 'PENDING' && <span style={{ padding: '4px 10px', background: 'rgba(255,153,0,0.2)', color: '#ff9900', borderRadius: '12px', fontSize: '0.8rem', fontWeight: 'bold' }}>Pending Approval</span>}
+                                            {attr.status === 'REJECTED' && <span style={{ padding: '4px 10px', background: 'rgba(255,51,102,0.2)', color: '#ff3366', borderRadius: '12px', fontSize: '0.8rem', fontWeight: 'bold' }}>Rejected</span>}
                                         </div>
                                         <div style={{ display: 'flex', gap: '15px', color: '#aaa', alignItems: 'center' }}>
-                                            <span style={{ background: 'rgba(255,255,255,0.1)', padding: '5px 12px', borderRadius: '10px', color: 'white' }}>{attr.category}</span>
-                                            <span>Engagement Index: <strong style={{ color: attr.status === 'Pending' ? '#ff9900' : '#00f0ff' }}>{attr.popularity}</strong></span>
+                                            <span style={{ background: 'rgba(255,255,255,0.1)', padding: '5px 12px', borderRadius: '10px', color: 'white' }}>{attr.location}</span>
+                                            <span>Engagement Index: <strong style={{ color: attr.status === 'PENDING' ? '#ff9900' : '#00f0ff' }}>Calculated by System</strong></span>
                                         </div>
                                     </div>
                                     <div style={{ display: 'flex', gap: '15px' }}>

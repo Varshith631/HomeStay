@@ -1,34 +1,69 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import PageTransition from '../components/PageTransition';
 import { Search, MapPin, Star, Sparkles, CheckCircle2 } from 'lucide-react';
-import { useData } from '../context/DataContext';
 import { useAuth } from '../context/AuthContext';
 
 export default function TouristDashboard() {
-    const { homestays, attractions, addBooking } = useData();
-    const { currentUser } = useAuth();
-    const [bookingSuccessId, setBookingSuccessId] = useState(null);
+    const [homestays, setHomestays] = useState([]);
+    const [attractions, setAttractions] = useState([]);
+    const [myBookings, setMyBookings] = useState([]);
+    const { currentUser, authFetch } = useAuth();
 
-    // Only show approved attractions to tourists
-    const approvedAttractions = attractions.filter(a => a.status === 'Approved');
+    useEffect(() => {
+        const fetchDashboardData = async () => {
+            try {
+                // Fetch real listings using authenticated fetch
+                const resListings = await authFetch('/api/listings/public');
+                if (resListings.ok) {
+                    const data = await resListings.json();
+                    setHomestays(data);
+                }
 
-    const handleBook = (homestay) => {
-        const newBooking = {
-            id: `TKT-${Math.floor(Math.random() * 90000) + 10000}X`,
-            homestayId: homestay.id,
-            touristName: currentUser?.name || 'Guest User',
-            dates: "TBD", // Simplification
-            status: "Pending" // Host needs to approve
+                // Fetch real recommendations (attractions) using authenticated fetch
+                const resAttractions = await authFetch('/api/recommendations/public');
+                if (resAttractions.ok) {
+                    const data = await resAttractions.json();
+                    setAttractions(data);
+                }
+
+                // Fetch my own bookings to see statuses
+                const resBookings = await authFetch('/api/bookings/me');
+                if (resBookings.ok) {
+                    const bData = await resBookings.json();
+                    setMyBookings(bData);
+                }
+            } catch (error) {
+                console.error("Failed to load dashboard data:", error);
+            }
         };
 
-        addBooking(newBooking);
+        fetchDashboardData();
+    }, [authFetch]);
 
-        // Show success state
-        setBookingSuccessId(homestay.id);
-        setTimeout(() => {
-            setBookingSuccessId(null);
-        }, 3000);
+    const handleBook = async (homestay) => {
+        const payload = {
+            listingId: homestay.id,
+            checkInDate: '2026-05-01', // Example date
+            checkOutDate: '2026-05-07', // Example date
+            totalPrice: homestay.pricePerNight * 6
+        };
+
+        try {
+            const res = await authFetch('/api/bookings', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            if (res.ok) {
+                const newBooking = await res.json();
+                setMyBookings(prev => [...prev, newBooking]); // Instantly push to state
+            } else {
+                alert("Failed to create booking");
+            }
+        } catch (e) {
+            console.error(e);
+        }
     };
 
     return (
@@ -49,28 +84,33 @@ export default function TouristDashboard() {
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(350px, 1fr))', gap: '30px', marginBottom: '80px' }}>
                     {homestays.map((home, i) => (
                         <motion.div key={home.id} initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: i * 0.1 }} className="glass-panel hover-glow" style={{ padding: '25px', position: 'relative' }}>
-                            <div style={{ height: '220px', background: '#111', backgroundImage: `url(${home.image})`, backgroundSize: 'cover', backgroundPosition: 'center', borderRadius: '16px', marginBottom: '20px', position: 'relative', overflow: 'hidden' }}>
+                            <div style={{ height: '220px', background: '#111', backgroundImage: `url(${home.imageUrl || home.image})`, backgroundSize: 'cover', backgroundPosition: 'center', borderRadius: '16px', marginBottom: '20px', position: 'relative', overflow: 'hidden' }}>
                                 <div style={{ position: 'absolute', top: '15px', right: '15px', background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(5px)', padding: '5px 12px', borderRadius: '20px', display: 'flex', alignItems: 'center', gap: '5px', fontWeight: 600 }}>
                                     <Star size={14} color="#ff00f0" /> {home.rating}
                                 </div>
                             </div>
-                            <h3 style={{ fontSize: '1.5rem', marginBottom: '8px' }}>{home.name}</h3>
+                            <h3 style={{ fontSize: '1.5rem', marginBottom: '8px' }}>{home.title}</h3>
                             <p style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#ccc', marginBottom: '20px' }}><MapPin size={18} color="#00f0ff" /> {home.location}</p>
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: '20px' }}>
-                                <span className="text-gradient" style={{ fontSize: '1.8rem', fontWeight: 800 }}>${home.price}<span style={{ fontSize: '1rem', color: '#aaa', fontWeight: 400 }}>/night</span></span>
-
-                                {bookingSuccessId === home.id ? (
-                                    <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} style={{ display: 'flex', alignItems: 'center', gap: '5px', color: '#00ffcc', fontWeight: 600 }}>
-                                        <CheckCircle2 size={20} /> Requested
-                                    </motion.div>
-                                ) : (
-                                    <button
-                                        onClick={() => handleBook(home)}
-                                        style={{ background: 'white', color: 'black', border: 'none', padding: '10px 20px', borderRadius: '12px', fontWeight: 600, cursor: 'pointer' }}
-                                    >
-                                        Request Book
-                                    </button>
-                                )}
+                                <span className="text-gradient" style={{ fontSize: '1.8rem', fontWeight: 800 }}>${home.pricePerNight}<span style={{ fontSize: '1rem', color: '#aaa', fontWeight: 400 }}>/night</span></span>
+                                {(() => {
+                                    const existing = myBookings.find(b => b.listingId === home.id);
+                                    if (existing) {
+                                        return (
+                                            <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} style={{ display: 'flex', alignItems: 'center', gap: '5px', color: existing.status === 'CONFIRMED' ? '#00ffcc' : existing.status === 'REJECTED' ? '#ff3366' : '#ff9900', fontWeight: 600 }}>
+                                                <CheckCircle2 size={20} /> {existing.status === 'CONFIRMED' ? 'Accepted' : existing.status === 'REJECTED' ? 'Rejected' : 'Requested'}
+                                            </motion.div>
+                                        );
+                                    }
+                                    return (
+                                        <button
+                                            onClick={() => handleBook(home)}
+                                            style={{ background: 'white', color: 'black', border: 'none', padding: '10px 20px', borderRadius: '12px', fontWeight: 600, cursor: 'pointer' }}
+                                        >
+                                            Request Book
+                                        </button>
+                                    );
+                                })()}
                             </div>
                         </motion.div>
                     ))}
@@ -79,7 +119,7 @@ export default function TouristDashboard() {
                 <h2 style={{ fontSize: '2.5rem', marginBottom: '30px', display: 'flex', alignItems: 'center', gap: '15px' }}><Sparkles color="#00f0ff" /> Local Attractions Insights</h2>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(350px, 1fr))', gap: '30px', paddingBottom: '40px' }}>
                     <AnimatePresence>
-                        {approvedAttractions.map((attr, i) => (
+                        {attractions.map((attr, i) => (
                             <motion.div
                                 key={attr.id}
                                 layout
@@ -89,12 +129,9 @@ export default function TouristDashboard() {
                                 className="glass-panel hover-glow"
                                 style={{ padding: '30px', borderLeft: '4px solid #00f0ff' }}
                             >
-                                <h3 style={{ fontSize: '1.4rem', marginBottom: '10px' }}>{attr.name}</h3>
-                                <span style={{ display: 'inline-block', padding: '5px 12px', background: 'rgba(255,255,255,0.1)', borderRadius: '20px', fontSize: '0.9rem', marginBottom: '20px' }}>{attr.category}</span>
-                                <p style={{ color: '#aaa', marginBottom: '10px', fontSize: '0.9rem' }}>Engagement Score: {attr.popularity}%</p>
-                                <div style={{ height: '8px', width: '100%', background: '#222', borderRadius: '4px', overflow: 'hidden' }}>
-                                    <motion.div initial={{ width: 0 }} animate={{ width: `${attr.popularity}%` }} transition={{ duration: 1.5, delay: 0.5, ease: "easeOut" }} style={{ height: '100%', background: 'linear-gradient(90deg, #00f0ff, #7000ff)' }} />
-                                </div>
+                                <h3 style={{ fontSize: '1.4rem', marginBottom: '10px' }}>{attr.title}</h3>
+                                <span style={{ display: 'inline-block', padding: '5px 12px', background: 'rgba(255,255,255,0.1)', borderRadius: '20px', fontSize: '0.9rem', marginBottom: '20px' }}>{attr.location}</span>
+                                <p style={{ color: '#aaa', marginBottom: '10px', fontSize: '0.9rem' }}>{attr.content}</p>
                             </motion.div>
                         ))}
                     </AnimatePresence>

@@ -45,6 +45,9 @@ export function DataProvider({ children }) {
     const updateAttractionStatus = (attractionId, newStatus) => {
         setAttractions(prev => prev.map(a => a.id === attractionId ? { ...a, status: newStatus } : a));
     };
+    
+    // Homestay Actions
+    const addHomestay = (newHomestay) => setHomestays(prev => [...prev, { ...newHomestay, id: Date.now().toString() }]);
 
     // User Actions
     const addUser = (newUser) => setUsers(prev => [...prev, newUser]);
@@ -54,7 +57,7 @@ export function DataProvider({ children }) {
 
     return (
         <DataContext.Provider value={{
-            homestays,
+            homestays, setHomestays, addHomestay,
             attractions, setAttractions, addAttraction, updateAttractionStatus,
             bookings, setBookings, updateBookingStatus, addBooking,
             emails, setEmails,

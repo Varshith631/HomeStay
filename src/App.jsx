@@ -7,13 +7,14 @@ import AdminDashboard from './pages/AdminDashboard';
 import HostDashboard from './pages/HostDashboard';
 import TouristDashboard from './pages/TouristDashboard';
 import GuideDashboard from './pages/GuideDashboard';
+import OAuth2Redirect from './pages/OAuth2Redirect';
 import { AnimatePresence } from 'framer-motion';
 import { useAuth } from './context/AuthContext';
 
 function ProtectedRoute({ children, allowedRoles }) {
     const { currentUser } = useAuth();
     if (!currentUser) return <Navigate to="/login" replace />;
-    if (allowedRoles && !allowedRoles.includes(currentUser.role)) {
+    if (allowedRoles && !allowedRoles.map(r => r.toUpperCase()).includes(currentUser.role.toUpperCase())) {
         return <Navigate to="/" replace />;
     }
     return children;
@@ -29,6 +30,7 @@ function App() {
                         <Route path="/" element={<Landing />} />
                         <Route path="/login" element={<Login />} />
                         <Route path="/signup" element={<Signup />} />
+                        <Route path="/oauth2/redirect" element={<OAuth2Redirect />} />
                         <Route path="/admin" element={<ProtectedRoute allowedRoles={['Admin']}><AdminDashboard /></ProtectedRoute>} />
                         <Route path="/host" element={<ProtectedRoute allowedRoles={['Host']}><HostDashboard /></ProtectedRoute>} />
                         <Route path="/tourist" element={<ProtectedRoute allowedRoles={['Tourist']}><TouristDashboard /></ProtectedRoute>} />

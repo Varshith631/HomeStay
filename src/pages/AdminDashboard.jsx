@@ -1,16 +1,44 @@
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import PageTransition from '../components/PageTransition';
 import { Shield, Activity, Users, Database, Check, X } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
 import { useData } from '../context/DataContext';
 
 export default function AdminDashboard() {
-    const { attractions, updateAttractionStatus, emails, users, updateUserStatus } = useData();
-
-    // Use unique users derived from emails/mock data or hardcode for demo
+    const { authFetch } = useAuth();
+    const [pendingAttractions, setPendingAttractions] = useState([]);
+    
+    // Kept for UI flavor, we are only modifying Attractions
+    const { emails, users, updateUserStatus } = useData();
     const mockSystemUsers = users.length;
-
-    const pendingAttractions = attractions.filter(a => a.status === 'Pending');
     const pendingUsers = users.filter(u => u.status === 'Pending');
+
+    const fetchPendingAttractions = async () => {
+        try {
+            const res = await authFetch('/api/recommendations/pending');
+            if (res.ok) {
+                setPendingAttractions(await res.json());
+            }
+        } catch(e) {
+            console.error(e);
+        }
+    };
+
+    useEffect(() => {
+        fetchPendingAttractions();
+    }, [authFetch]);
+
+    const updateAttractionStatus = async (id, status) => {
+        try {
+            const res = await authFetch(`/api/recommendations/${id}/status?status=${status}`, { method: 'PUT' });
+            if (res.ok) {
+                setPendingAttractions(prev => prev.filter(a => a.id !== id));
+            }
+        } catch(e) {
+            console.error(e);
+        }
+    };
 
     return (
         <PageTransition>
@@ -22,7 +50,7 @@ export default function AdminDashboard() {
                         { label: 'Active Nodes', val: mockSystemUsers, icon: <Users size={28} color="#00f0ff" /> },
                         { label: 'Network Health', val: '99.9%', icon: <Activity size={28} color="#00ffcc" /> },
                         { label: 'Security Layer', val: 'Level 5', icon: <Shield size={28} color="#7000ff" /> },
-                        { label: 'Data Packets', val: attractions.length + emails.length, icon: <Database size={28} color="#ff00f0" /> }
+                        { label: 'Data Packets', val: pendingAttractions.length + emails.length, icon: <Database size={28} color="#ff00f0" /> }
                     ].map((s, i) => (
                         <motion.div key={i} className="glass-panel" initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ delay: i * 0.1 }} style={{ padding: '30px', position: 'relative', overflow: 'hidden' }}>
                             <div style={{ position: 'absolute', top: '-10px', right: '-10px', opacity: 0.1, transform: 'scale(3)' }}>{s.icon}</div>
@@ -52,12 +80,12 @@ export default function AdminDashboard() {
                                             style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(255,153,0,0.1)', padding: '20px', borderRadius: '16px', borderLeft: '4px solid #ff9900' }}
                                         >
                                             <div>
-                                                <div style={{ fontWeight: 600, fontSize: '1.2rem', marginBottom: '4px' }}>{attr.name}</div>
-                                                <div style={{ fontSize: '0.9rem', color: '#aaa' }}>Category: {attr.category}</div>
+                                                <div style={{ fontWeight: 600, fontSize: '1.2rem', marginBottom: '4px' }}>{attr.title}</div>
+                                                <div style={{ fontSize: '0.9rem', color: '#aaa' }}>Category: {attr.location} | Guide: {attr.guideName}</div>
                                             </div>
                                             <div style={{ display: 'flex', gap: '10px' }}>
-                                                <motion.button whileHover={{ scale: 1.1 }} onClick={() => updateAttractionStatus(attr.id, 'Approved')} style={{ background: 'rgba(0,255,204,0.1)', border: '1px solid #00ffcc', color: '#00ffcc', padding: '10px', borderRadius: '8px', cursor: 'pointer' }}><Check size={20} /></motion.button>
-                                                <motion.button whileHover={{ scale: 1.1 }} onClick={() => updateAttractionStatus(attr.id, 'Rejected')} style={{ background: 'rgba(255,51,102,0.1)', border: '1px solid #ff3366', color: '#ff3366', padding: '10px', borderRadius: '8px', cursor: 'pointer' }}><X size={20} /></motion.button>
+                                                <motion.button whileHover={{ scale: 1.1 }} onClick={() => updateAttractionStatus(attr.id, 'APPROVED')} style={{ background: 'rgba(0,255,204,0.1)', border: '1px solid #00ffcc', color: '#00ffcc', padding: '10px', borderRadius: '8px', cursor: 'pointer' }}><Check size={20} /></motion.button>
+                                                <motion.button whileHover={{ scale: 1.1 }} onClick={() => updateAttractionStatus(attr.id, 'REJECTED')} style={{ background: 'rgba(255,51,102,0.1)', border: '1px solid #ff3366', color: '#ff3366', padding: '10px', borderRadius: '8px', cursor: 'pointer' }}><X size={20} /></motion.button>
                                             </div>
                                         </motion.div>
                                     ))}
