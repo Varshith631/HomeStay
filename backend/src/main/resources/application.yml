@@ -41,6 +41,7 @@ spring:
 app:
   jwt:
     secret: 9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08e1a8bb1e9be6db3c8b4fb9b60b71d6f1a8bb1e9be6db3c8b4fb9b60b71d6f1
-    expiration: 86400000 # 1 day in ms
+    expiration: 86400000
+
   cors:
-    allowed-origins: "http://localhost:5173"
+    allowed-origins: ${FRONTEND_URL:http://localhost:5173}
